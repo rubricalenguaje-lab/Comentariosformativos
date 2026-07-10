@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Global uppercase typography and smaller font adjustments */
+html, body, #root, button, input, textarea, select {
+  font-family: var(--font-sans);
+  text-transform: uppercase !important;
+  font-size: 0.81rem !important; /* Slightly smaller for high-end Swiss look */
+  letter-spacing: 0.04em !important;
+  line-height: 1.4 !important;
+}
+
+/* headings are also uppercase and scaled elegantly */
+h1 {
+  font-size: 1.65rem !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 800 !important;
+}
+
+h2 {
+  font-size: 1.25rem !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+}
+
+h3 {
+  font-size: 1.05rem !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+
+h4 {
+  font-size: 0.88rem !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+}
+
+/* Small adjustments to input placeholder styles */
+::placeholder {
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.04em !important;
+}
+
+/* Buttons and specific badges keep clean, small capitalization */
+button, .btn {
+  font-weight: 700 !important;
+  font-size: 0.81rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+/* Exception for code/monospaced fonts */
+.font-mono, code, pre {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase !important;
+}
+
+/* Exception for textareas, inputs, and printed comments that require mixed/normal case */
+.preserve-case, .preserve-case *, [data-preserve-case], [data-preserve-case] * {
+  text-transform: none !important;
+}
+
+/* Custom print media styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide non-print elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Optimize layout for printing */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+

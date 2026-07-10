@@ -1,0 +1,6 @@
+{
+  "name": "Asistente de Informes",
+  "description": "Herramienta inteligente para redactar, automatizar y personalizar comentarios pedagógicos de informes escolares.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
