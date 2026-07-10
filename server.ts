@@ -113,7 +113,16 @@ async function callGeminiWithFallback(config: {
   responseSchema?: any;
   customApiKey?: string;
 }) {
-  const models = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-3.1-pro-preview'];
+  const models = [
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
+    'gemini-3.5-flash',
+    'gemini-2.5-pro',
+    'gemini-1.5-pro',
+    'gemini-flash-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-3.1-pro-preview'
+  ];
   const maxRetriesPerModel = 3;
   let lastError: any = null;
 
@@ -153,33 +162,37 @@ async function callGeminiWithFallback(config: {
         const errMessage = error.message || '';
         const lowerMessage = errMessage.toLowerCase();
         
-        // Is it a definitive quota or resource exhausted error?
+        // 1. Is it a definitive quota or resource exhausted error?
         const isQuotaError = error.status === 429 || 
                              error.status === 'RESOURCE_EXHAUSTED' || 
                              lowerMessage.includes('429') || 
                              lowerMessage.includes('quota') || 
                              lowerMessage.includes('exhausted');
 
-        // Fail-fast for client configuration or syntax issues (e.g. 400 Bad Request)
-        // Ensure we don't treat quota errors as client errors (which could happen if the error message contains random numbers like '400' in float retry delays)
-        const isClientError = !isQuotaError && (
-          error.status === 400 || 
-          error.status === 403 || 
-          (/\b400\b/.test(errMessage)) || 
-          (/\b403\b/.test(errMessage)) || 
-          lowerMessage.includes('api key')
-        );
+        // 2. Auth error - fails fast for the entire request
+        const isAuthError = error.status === 403 || 
+                            lowerMessage.includes('api key') || 
+                            lowerMessage.includes('invalid api key') ||
+                            lowerMessage.includes('api_key') ||
+                            lowerMessage.includes('403');
 
-        if (isClientError) {
-          console.log(`[CLIENT_ERROR] Failing fast on client/syntax error: ${errMessage}`);
+        if (isAuthError) {
+          console.log(`[AUTH_ERROR] Invalid API key or permission denied. Aborting and throwing immediately: ${errMessage}`);
           throw error;
         }
 
-        // If it is a quota/resource exhaustion error, we should not wait and retry this model.
-        // Let's immediately break the attempt loop to try the next fallback model.
-        if (isQuotaError) {
-          console.log(`[QUOTA_EXCEEDED] Quota limit hit for model ${model}. Skipping retries for this model and attempting fallback...`);
-          break;
+        // 3. Model not found or unsupported features (404, 400 client error on this specific model)
+        const isModelSpecificError = error.status === 404 || 
+                                     error.status === 400 ||
+                                     lowerMessage.includes('not found') ||
+                                     lowerMessage.includes('not supported') ||
+                                     lowerMessage.includes('unsupported') ||
+                                     lowerMessage.includes('404') ||
+                                     lowerMessage.includes('400');
+
+        if (isQuotaError || isModelSpecificError) {
+          console.log(`[MODEL_ERROR] Model ${model} failed with non-retriable/quota/404/400 error: ${errMessage}. Skipping further attempts on this model and trying next fallback model...`);
+          break; // Break the attempt loop to move to the next model!
         }
 
         // Wait with exponential backoff and jitter before retrying

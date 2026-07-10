@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, UploadCloud, FileText, Trash2, AlertCircle, Sparkles, Info } from 'lucide-react';
 import { extractTextFromFile } from '../utils/fileExtractor';
+import { safeFetchJson } from '../utils/api';
 import { Student } from '../types';
 
 interface UploadProps {
@@ -73,7 +74,7 @@ export const Upload: React.FC<UploadProps> = ({ onBack, onProcessed, userApiKey 
     setLoadingText('Analizando documentos y unificando alumnos con Gemini AI...');
 
     try {
-      const response = await fetch('/api/extract-students', {
+      const data = await safeFetchJson<any>('/api/extract-students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -84,11 +85,6 @@ export const Upload: React.FC<UploadProps> = ({ onBack, onProcessed, userApiKey 
           customApiKey: userApiKey,
         }),
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al procesar los archivos.');
-      }
 
       if (data.error) {
         setErrorMsg(data.error);

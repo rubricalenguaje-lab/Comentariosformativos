@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Sparkles, RefreshCw, CheckCircle2, Copy, FileCheck, Clipboard } from 'lucide-react';
 import { DEFAULT_ADJECTIVES } from '../data';
 import { AiModelBadge } from './AiModelBadge';
+import { safeFetchJson } from '../utils/api';
 
 interface EditProps {
   studentName: string;
@@ -34,12 +35,11 @@ export const Edit: React.FC<EditProps> = ({
   const handleGenerateNewAdjectives = async () => {
     setIsGeneratingAdjectives(true);
     try {
-      const response = await fetch('/api/generate-adjectives', {
+      const data = await safeFetchJson<string[]>('/api/generate-adjectives', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customApiKey: userApiKey }),
       });
-      const data = await response.json();
       if (Array.isArray(data) && data.length > 0) {
         setAdjectives(data);
       }

@@ -12,6 +12,7 @@ import { FORTALEZAS_ACADEMICAS, FORTALEZAS_PERSONALES, DESAFIOS } from './data';
 import { User } from 'firebase/auth';
 import { initAuth, googleSignIn, logout as firebaseLogout } from './utils/firebaseAuth';
 import { saveCourseToDrive } from './utils/googleWorkspace';
+import { safeFetchJson } from './utils/api';
 
 export default function App() {
   const [view, setView] = useState<AppView>('dashboard');
@@ -196,7 +197,7 @@ export default function App() {
     setIsGenerating(true);
     setLoadingText(`Generando diagnóstico pedagógico para ${student.nombre}...`);
     try {
-      const response = await fetch('/api/generate-synthesis', {
+      const data = await safeFetchJson<any>('/api/generate-synthesis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -209,10 +210,6 @@ export default function App() {
           challengesOptions: DESAFIOS,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'No se pudo generar la síntesis.');
-      }
       setSynthesis(data.synthesis || '');
       setRecommendedAcademics(data.recommendedAcademics || []);
       setRecommendedPersonals(data.recommendedPersonals || []);
@@ -240,7 +237,7 @@ export default function App() {
     setIsGenerating(true);
     setLoadingText(`Redactando comentario pedagógico formativo...`);
     try {
-      const response = await fetch('/api/generate-comment', {
+      const data = await safeFetchJson<any>('/api/generate-comment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -253,10 +250,6 @@ export default function App() {
           customApiKey: userApiKey,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al generar comentario.');
-      }
 
       if (data.modelUsed) {
         setModelUsed(data.modelUsed);
