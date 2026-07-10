@@ -148,12 +148,38 @@ async function callGeminiWithFallback(config: {
       } catch (error: any) {
         lastError = error;
         const statusCode = error.status || error.code || '429';
-        console.log(`[INFO] Model ${model} returned code ${statusCode} on attempt ${attempt}. Switching/retrying fallback...`);
+        console.log(`[INFO] Model ${model} returned code ${statusCode} on attempt ${attempt}. Handling error...`);
         
+        const errMessage = error.message || '';
+        const lowerMessage = errMessage.toLowerCase();
+        
+        // Is it a definitive quota or resource exhausted error?
+        const isQuotaError = error.status === 429 || 
+                             error.status === 'RESOURCE_EXHAUSTED' || 
+                             lowerMessage.includes('429') || 
+                             lowerMessage.includes('quota') || 
+                             lowerMessage.includes('exhausted');
+
         // Fail-fast for client configuration or syntax issues (e.g. 400 Bad Request)
-        const isClientError = error.status === 400 || (error.message && error.message.includes('400')) || error.status === 403 || (error.message && error.message.includes('API key'));
+        // Ensure we don't treat quota errors as client errors (which could happen if the error message contains random numbers like '400' in float retry delays)
+        const isClientError = !isQuotaError && (
+          error.status === 400 || 
+          error.status === 403 || 
+          (/\b400\b/.test(errMessage)) || 
+          (/\b403\b/.test(errMessage)) || 
+          lowerMessage.includes('api key')
+        );
+
         if (isClientError) {
+          console.log(`[CLIENT_ERROR] Failing fast on client/syntax error: ${errMessage}`);
           throw error;
+        }
+
+        // If it is a quota/resource exhaustion error, we should not wait and retry this model.
+        // Let's immediately break the attempt loop to try the next fallback model.
+        if (isQuotaError) {
+          console.log(`[QUOTA_EXCEEDED] Quota limit hit for model ${model}. Skipping retries for this model and attempting fallback...`);
+          break;
         }
 
         // Wait with exponential backoff and jitter before retrying
